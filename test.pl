@@ -1,12 +1,16 @@
 
-locate(3,3,rook,black).
-locate(3,4,rook,black).
-locate(3,5,rook,black).
-locate(4,3,rook,black).
-locate(4,5,rook,black).
-locate(5,3,rook,black).
-locate(5,4,rook,black).
-locate(5,5,rook,black).
+locate(1,6,rook,black).
+locate(2,4,rook,black).
+locate(2,5,rook,black).
+locate(4,1,rook,black).
+locate(5,8,rook,black).
+locate(6,1,rook,black).
+locate(6,3,rook,black).
+locate(7,3,rook,black).
+locate(8,6,rook,black).
+
+locate(7,1,pawn,white).
+locate(7,2,pawn,white).
 
 opponentColor(black,white).
 opponentColor(white,black).
@@ -45,13 +49,60 @@ canAttack(NowRow,NowCol,NewRow,NewCol,rook,YourType,MyColor):-
 
 canGo(NowRow,NowCol,NewRow,NewCol,bishop,MyColor):-
 	locate(NowRow,NowCol,bishop,MyColor),
-	rookCanGo(NowRow,NowCol,NewRow,NewCol,MyColor),
+	bishopCanGo(NowRow,NowCol,NewRow,NewCol,MyColor),
 	\+locate(NewRow,NewCol,_,MyColor).
 
 canAttack(NowRow,NowCol,NewRow,NewCol,bishop,YourType,MyColor):-
 	canGo(NowRow,NowCol,NewRow,NewCol,bishop,MyColor),
 	opponentColor(MyColor,YourColor),
 	locate(NewRow,NewCol,YourType,YourColor).
+
+canGo(NowRow,NowCol,NewRow,NewCol,queen,MyColor):-
+	locate(NowRow,NowCol,queen,MyColor),
+	queenCanGo(NowRow,NowCol,NewRow,NewCol,MyColor),
+	\+locate(NewRow,NewCol,_,MyColor).
+
+canAttack(NowRow,NowCol,NewRow,NewCol,queen,YourType,MyColor):-
+	canGo(NowRow,NowCol,NewRow,NewCol,queen,MyColor),
+	opponentColor(MyColor,YourColor),
+	locate(NewRow,NewCol,YourType,YourColor).
+
+canGo(NowRow,NowCol,NewRow,NewCol,king,MyColor):-
+	locate(NowRow,NowCol,king,MyColor),
+	kingCanGo(NowRow,NowCol,NewRow,NewCol,MyColor),
+	\+locate(NewRow,NewCol,_,MyColor).
+
+canAttack(NowRow,NowCol,NewRow,NewCol,king,YourType,MyColor):-
+	canGo(NowRow,NowCol,NewRow,NewCol,king,MyColor),
+	opponentColor(MyColor,YourColor),
+	locate(NewRow,NewCol,YourType,YourColor).
+
+canGo(NowRow,NowCol,NewRow,NewCol,pawn,MyColor):-
+	locate(NowRow,NowCol,pawn,MyColor),
+	pawnCanGo(NowRow,NowCol,NewRow,NewCol,MyColor),
+	\+locate(NewRow,NewCol,_,MyColor).
+
+canAttack(NowRow,NowCol,NewRow,NewCol,pawn,YourType,black):-
+	locate(NowRow,NowCol,pawn,black),
+	NewRow is NowRow+1,
+	(
+		NewCol is NowCol-1;
+		NewCol is NowCol+1
+	),
+	locate(NewRow,NewCol,YourType,white),
+	between(1,8,NewRow),
+	between(1,8,NewCol).
+
+canAttack(NowRow,NowCol,NewRow,NewCol,pawn,YourType,white):-
+	locate(NowRow,NowCol,pawn,white),
+	NewRow is NowRow-1,
+	(
+		NewCol is NowCol-1;
+		NewCol is NowCol+1
+	),
+	locate(NewRow,NewCol,YourType,black),
+	between(1,8,NewRow),
+	between(1,8,NewCol).
 
 knightCanGo(NowRow,NowCol,NewRow,NewCol,MyColor):-
 	(
@@ -144,6 +195,59 @@ bishopCanGo(NowRow,NowCol,NewRow,NewCol,MyColor):-
 			)
 		)
 	).
+
+queenCanGo(NowRow,NowCol,NewRow,NewCol,MyColor):-
+	rookCanGo(NowRow,NowCol,NewRow,NewCol,MyColor);
+	bishopCanGo(NowRow,NowCol,NewRow,NewCol,MyColor).
+
+kingCanGo(NowRow,NowCol,NewRow,NewCol,MyColor):-
+	(
+		NewRow is NowRow - 1, NewCol is NowCol - 1;
+		NewRow is NowRow - 1, NewCol is NowCol;
+		NewRow is NowRow - 1, NewCol is NowCol + 1;
+		NewRow is NowRow , NewCol is NowCol - 1;
+		NewRow is NowRow , NewCol is NowCol + 1;
+		NewRow is NowRow + 1, NewCol is NowCol - 1;
+		NewRow is NowRow + 1, NewCol is NowCol;
+		NewRow is NowRow + 1, NewCol is NowCol + 1
+	),
+	between(1,8,NewRow),
+	between(1,8,NewCol),
+	\+locate(NewRow,NewCol,_,MyColor).
+
+pawnCanGo(NowRow,NowCol,NewRow,NewCol,black):-
+	NewCol is NowCol,
+	(
+		(
+			NowRow is 2,
+			PRow is NowRow+1,
+			NewRow is NowRow+2,
+			\+locate(PRow,NewCol,_,_),
+			\+locate(NewRow,NewCol,_,_)
+		);
+		(
+			NewRow is NowRow+1,
+			\+locate(NewRow,NewCol,_,_)
+		)
+	),
+	between(1,8,NewRow).
+
+pawnCanGo(NowRow,NowCol,NewRow,NewCol,white):-
+	NewCol is NowCol,
+	(
+		(
+			NowRow is 7,
+			PRow is NowRow-1,
+			NewRow is NowRow-2,
+			\+locate(PRow,NewCol,_,_),
+			\+locate(NewRow,NewCol,_,_)
+		);
+		(
+			NewRow is NowRow-1,
+			\+locate(NewRow,NewCol,_,_)
+		)
+	),
+	between(1,8,NewRow).
 
 nearestRight(Row,Col,MyColor,YourColor,Ncol):-
 	(
