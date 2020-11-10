@@ -1,16 +1,27 @@
+board(
+	[
+		pos(1,4,king,black),
+		pos(2,2,rook,black),
+		pos(2,7,pawn,black),
+		pos(3,7,bishop,black),
+		pos(4,3,knight,black),
+		pos(4,5,pawn,black),
+		pos(6,7,queen,black),
+		pos(7,1,rook,black),
 
-locate(1,6,rook,black).
-locate(2,4,rook,black).
-locate(2,5,rook,black).
-locate(4,1,rook,black).
-locate(5,8,rook,black).
-locate(6,1,rook,black).
-locate(6,3,rook,black).
-locate(7,3,rook,black).
-locate(8,6,rook,black).
+		pos(5,2,pawn,white),
+		pos(6,3,knight,white),
+		pos(6,5,queen,white),
+		pos(7,2,pawn,white),
+		pos(7,4,pawn,white),
+		pos(7,6,king,white),
+		pos(8,3,bishop,white)
+	]
+).
 
-locate(7,1,pawn,white).
-locate(7,2,pawn,white).
+locate(Row,Col,Type,Color):-
+	board(L),
+	member(pos(Row,Col,Type,Color),L).
 
 opponentColor(black,white).
 opponentColor(white,black).
@@ -103,6 +114,10 @@ canAttack(NowRow,NowCol,NewRow,NewCol,pawn,YourType,white):-
 	locate(NewRow,NewCol,YourType,black),
 	between(1,8,NewRow),
 	between(1,8,NewCol).
+
+moveAndAttack(NowRow,NowCol,NewRow,NewCol,YourRow,YourCol,MyType,YourType):-
+	canGo(NowRow,NowCol,NewRow,NewCol,MyType,black),
+	canAttack(YourRow,YourCol,NewRow,NewCol,YourType,MyType,white).
 
 knightCanGo(NowRow,NowCol,NewRow,NewCol,MyColor):-
 	(
