@@ -26,6 +26,12 @@ locate(Row,Col,Type,Color,Board):-
 opponentColor(black,white).
 opponentColor(white,black).
 
+typeNum(queen,1).
+typeNum(rook,2).
+typeNum(bishop,3).
+typeNum(knight,4).
+typeNum(pawn,5).
+
 notPawnList([rook,bishop,knight,queen,king]).
 
 notPawn(Type):-
@@ -163,19 +169,80 @@ canAttack(NowRow,NowCol,NewRow,NewCol,pawn,YourType,white,Board):-
 	between(1,8,NewRow),
 	between(1,8,NewCol).
 
-check(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board):-
+calculatePoint(TypeNum,PointList,Point):-
+	(
+		TypeNum is 1,
+		[Point,_,_,_,_]=PointList
+	);
+	(
+		TypeNum is 2,
+		[_,Point,_,_,_]=PointList
+	);
+	(
+		TypeNum is 3,
+		[_,_,Point,_,_]=PointList
+	);
+	(
+		TypeNum is 4,
+		[_,_,_,Point,_]=PointList
+	);
+	(
+		TypeNum is 5,
+		[_,_,_,_,Point]=PointList
+	).
+
+canGetPointHappy(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Point,PointList,Board):-
+	opponentColor(MyColor,YourColor),
+	canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	\+(
+		canAttack(OppoRow,OppoCol,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+	),
+	typeNum(MyType,TypeNum1),
+	typeNum(YourType1,TypeNum2),
+	calculatePoint(TypeNum2,PointList,PlusPoint),
+	Point is PlusPoint.
+
+canGetPointSad(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Point,PointList,Board):-
+	opponentColor(MyColor,YourColor),
+	canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	canAttack(OppoRow,OppoCol,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter),
+	typeNum(MyType,TypeNum1),
+	typeNum(YourType1,TypeNum2),
+	calculatePoint(TypeNum2,PointList,PlusPoint),
+	calculatePoint(TypeNum1,PointList,MinusPoint),
+	Point is PlusPoint-MinusPoint.
+
+pointLoop(StartPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board):-
+	(
+		Point = StartPoint,
+		(
+			canGetPointHappy(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board);
+			canGetPointSad(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board)
+		)
+	)
+	;
+	(
+		StartPoint > -15,
+		NewPoint is StartPoint-1,
+		pointLoop(NewPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board)
+	).
+
+checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board):-
 	opponentColor(MyColor,YourColor),
 	canAttack(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,king,YourColor,Board).
 
 escapeCheck(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board):-
-	check(OppoRow1,OppoCol1,NowKingRow1,NowKingCol1,YourType1,MyColor,Board),
+	checked(OppoRow1,OppoCol1,NowKingRow1,NowKingCol1,YourType1,MyColor,Board),
 	opponentColor(MyColor,YourColor),
 	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
 	\+(
-		check(OppoRow2,OppoCol2,NowKingRow2,NowKingCol2,YourType2,MyColor,BoardAfter)
+		checked(OppoRow2,OppoCol2,NowKingRow2,NowKingCol2,YourType2,MyColor,BoardAfter)
 	).
 
 checkmate(MyColor,Board):-
+	checked(OppoRow1,OppoCol1,NowKingRow1,NowKingCol1,YourType1,MyColor,Board),
 	forall(
 		escapeCheck(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
 		false
