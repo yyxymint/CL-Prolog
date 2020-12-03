@@ -1,24 +1,67 @@
-board(
-	[
-		pos(1,4,king,black),
-		pos(2,2,rook,black),
-		pos(2,7,pawn,black),
-		pos(3,7,bishop,black),
-		pos(4,3,knight,black),
-		pos(4,5,pawn,black),
-		pos(6,7,queen,black),
-		pos(7,1,rook,black),
+:- use_module(library(pio)).
 
-		pos(5,2,pawn,white),
-		pos(6,3,knight,white),
-		pos(6,5,queen,white),
-		pos(7,2,pawn,white),
-		pos(7,4,pawn,white),
-		pos(7,6,king,white),
-		pos(7,8,pawn,white),
-		pos(8,3,bishop,white)
-	]
-).
+dcgLocate(MyColor,Board) 
+--> wordColor(MyColor),wordType(MyType),[is,located,at],wordRow(Row),wordCol(Col),
+	{
+		locate(Row,Col,MyType,MyColor,Board)
+	}.
+
+dcgCanAttack(MyColor,Board) 
+--> wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[can,attack],
+	wordColor(YourColor),wordType(YourType),[at],wordRow(NewRow),wordCol(NewCol),
+	{
+		opponentColor(MyColor,YourColor),
+		canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Board)
+	}.
+
+dcgCanGo(MyColor,Board)
+--> wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[can,go,to],
+	wordRow(NewRow),wordCol(NewCol),
+	{
+		canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)
+	}.
+
+dcgMoveAndAttack(MyColor,Board) 
+--> [if],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[moves,to],wordRow(NewRow),wordCol(NewCol),
+	[then],wordColor(MyColor),[can],[attack],wordColor(YourColor),wordType(YourType),[at],wordRow(OppoRow),wordCol(OppoCol),
+	{
+		opponentColor(MyColor,YourColor),
+		moveAndAttack(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board)
+	}.
+
+dcgChecked(MyColor,Board)
+--> wordColor(MyColor),[king,at],wordRow(NowKingRow),wordCol(NowKingCol),[is,checked,by],wordColor(YourColor),wordType(YourType),
+	[at],wordRow(OppoRow),wordCol(OppoCol),dcgAfterChecked(MyColor,Board),
+	{
+		opponentColor(MyColor,YourColor),
+		checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board)
+	}.
+
+dcgAfterChecked(MyColor,Board)
+--> 
+	(
+		wordColor(MyColor),[can,escape,check],[by,moving],wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),
+		{escapeCheck(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)}
+	);
+	(
+		[checkmate],wordColor(MyColor),[cannot,save,king],wordColor(YourColor),[wins],
+		{checkmate(MyColor,Board)}
+	),!.
+
+wordColor(black) --> [black].
+wordColor(white) --> [white].
+
+wordRow(Row) --> [Row].
+wordCol(Col) --> [Col].
+
+wordType(knight) --> [knight].
+wordType(pawn) --> [pawn].
+wordType(king) --> [king].
+wordType(queen) --> [queen].
+wordType(bishop) --> [bishop].
+wordType(rook) --> [rook].
+
 
 locate(Row,Col,Type,Color,Board):-
 	member(pos(Row,Col,Type,Color),Board).
@@ -169,6 +212,30 @@ canAttack(NowRow,NowCol,NewRow,NewCol,pawn,YourType,white,Board):-
 	between(1,8,NewRow),
 	between(1,8,NewCol).
 
+
+
+moveAndAttack(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board):-
+	opponentColor(MyColor,YourColor),
+	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	canAttack(NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,BoardAfter),		
+	\+(
+		canAttack(NowRow,NowCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board)
+	),
+	(
+		(
+			\+(
+				canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+			)
+		);
+		(
+			canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter),
+			boardAfterMoving(BoardAfter,BoardLast,OppoRow2,OppoCol2,NewRow,NewCol,YourType2,YourColor),
+			canAttack(MyRow,MyCol,NewRow,NewCol,MyType2,YourType2,MyColor,BoardLast)
+		)
+	).
+
+
 calculatePoint(TypeNum,PointList,Point):-
 	(
 		TypeNum is 1,
@@ -224,7 +291,7 @@ pointLoop(StartPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,P
 	)
 	;
 	(
-		StartPoint > -15,
+		StartPoint > -StartPoint,
 		NewPoint is StartPoint-1,
 		pointLoop(NewPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board)
 	).
@@ -360,38 +427,64 @@ kingCanGo(NowRow,NowCol,NewRow,NewCol,MyColor,Board):-
 	\+locate(NewRow,NewCol,_,MyColor,Board).
 
 pawnCanGo(NowRow,NowCol,NewRow,NewCol,black,Board):-
-	NewCol is NowCol,
 	(
+		NewCol is NowCol,
 		(
-			NowRow is 2,
-			PRow is NowRow+1,
-			NewRow is NowRow+2,
-			\+locate(PRow,NewCol,_,_,Board),
-			\+locate(NewRow,NewCol,_,_,Board)
-		);
-		(
-			NewRow is NowRow+1,
-			\+locate(NewRow,NewCol,_,_,Board)
-		)
-	),
-	between(1,8,NewRow).
+			(
+				NowRow is 2,
+				PRow is NowRow+1,
+				NewRow is NowRow+2,
+				\+locate(PRow,NewCol,_,_,Board),
+				\+locate(NewRow,NewCol,_,_,Board)
+			);
+			(
+				NewRow is NowRow+1,
+				\+locate(NewRow,NewCol,_,_,Board)
+			)
+		),
+		between(1,8,NewRow)
+	);
+	(
+		(	
+			NewCol is NowCol-1;
+			NewCol is NowCol+1
+		),
+		NewRow is NowRow+1,
+		between(1,8,NewRow),
+		locate(NewRow,NewCol,_,white,Board)
+	).
+
+
 
 pawnCanGo(NowRow,NowCol,NewRow,NewCol,white,Board):-
-	NewCol is NowCol,
 	(
+		NewCol is NowCol,
 		(
-			NowRow is 7,
-			PRow is NowRow-1,
-			NewRow is NowRow-2,
-			\+locate(PRow,NewCol,_,_,Board),
-			\+locate(NewRow,NewCol,_,_,Board)
-		);
-		(
-			NewRow is NowRow-1,
-			\+locate(NewRow,NewCol,_,_,Board)
-		)
-	),
-	between(1,8,NewRow).
+			(
+				NowRow is 7,
+				PRow is NowRow-1,
+				NewRow is NowRow-2,
+				\+locate(PRow,NewCol,_,_,Board),
+				\+locate(NewRow,NewCol,_,_,Board)
+			);
+			(
+				NewRow is NowRow-1,
+				\+locate(NewRow,NewCol,_,_,Board)
+			)
+		),
+		between(1,8,NewRow)
+	);
+	(
+		(	
+			NewCol is NowCol-1;
+			NewCol is NowCol+1
+		),
+		NewRow is NowRow-1,
+		between(1,8,NewRow),
+		locate(NewRow,NewCol,_,black,Board)
+	).
+
+
 
 nearestRight(Row,Col,MyColor,YourColor,Ncol,Board):-
 	(
