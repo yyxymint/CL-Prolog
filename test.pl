@@ -140,7 +140,8 @@ excludePiece([H|T],Paper,BoardAfter,PieceInformation):-
 
 excludePiece([H|T],Paper,BoardAfter,PieceInformation):-
 	\+(H = PieceInformation),
-	excludePiece(T,[H|Paper],BoardAfter,PieceInformation).
+	append(Paper,[H],NextPaper),
+	excludePiece(T,NextPaper,BoardAfter,PieceInformation).
 
 excludePiece([],BoardAfter,BoardAfter,PieceInformation).
 
