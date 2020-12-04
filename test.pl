@@ -1,4 +1,4 @@
-:- use_module(library(pio)).
+:-set_prolog_flag(double_quotes, codes).
 
 dcgLocate(MyColor,Board) 
 --> wordColor(MyColor),wordType(MyType),[is,located,at],wordRow(Row),wordCol(Col),
@@ -34,7 +34,8 @@ dcgChecked(MyColor,Board)
 	[at],wordRow(OppoRow),wordCol(OppoCol),dcgAfterChecked(MyColor,Board),
 	{
 		opponentColor(MyColor,YourColor),
-		checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board)
+		checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board),
+		format('Hello Test ~w',MyColor)
 	}.
 
 dcgAfterChecked(MyColor,Board)
@@ -48,6 +49,32 @@ dcgAfterChecked(MyColor,Board)
 		[checkmate],wordColor(MyColor),[cannot,save,king],wordColor(YourColor),[wins],
 		{checkmate(MyColor,Board)}
 	),!.
+
+dcgCanGetPoint(StartPoint,MyColor,Board)
+--> dcgCanGetPoint(StartPoint,MyColor,[10,7,6,5,2],Board).
+
+dcgCanGetPoint(StartPoint,MyColor,PointList,Board)
+--> dcgCanGetPoint(StartPoint,StartPoint,MyColor,PointList,Board).
+
+dcgCanGetPoint(StartPoint,Point,MyColor,PointList,Board)
+--> 
+	(
+		wordColor(MyColor),[can,get],[Point],[points],[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,take],wordColor(YourColor),wordType(YourType),
+		{
+			canGetPoint(Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board),
+			opponentColor(MyColor,YourColor),
+			locate(NewRow,NewCol,YourType,YourColor,Board)
+		}
+	);
+	(
+		{
+			Point > -StartPoint,
+			NewPoint is Point - 1
+		},
+		dcgCanGetPoint(StartPoint,NewPoint,MyColor,PointList,Board)
+	).
+
 
 wordColor(black) --> [black].
 wordColor(white) --> [white].
@@ -281,6 +308,10 @@ canGetPointSad(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Point,PointL
 	calculatePoint(TypeNum1,PointList,MinusPoint),
 	Point is PlusPoint-MinusPoint.
 
+canGetPoint(Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board):-
+	canGetPointHappy(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board);
+	canGetPointSad(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board).
+
 pointLoop(StartPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board):-
 	(
 		Point = StartPoint,
@@ -291,10 +322,13 @@ pointLoop(StartPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,P
 	)
 	;
 	(
-		StartPoint > -StartPoint,
+		StartPoint >= -20,
 		NewPoint is StartPoint-1,
 		pointLoop(NewPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board)
 	).
+
+
+
 
 checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board):-
 	opponentColor(MyColor,YourColor),
