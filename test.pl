@@ -15,7 +15,7 @@ dcgCanAttack(MyColor,Board)
 	}.
 
 dcgCanGo(MyColor,Board)
---> wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[can,go,to],
+--> wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[can,move,to],
 	wordRow(NewRow),wordCol(NewCol),
 	{
 		canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)
@@ -31,11 +31,10 @@ dcgMoveAndAttack(MyColor,Board)
 
 dcgChecked(MyColor,Board)
 --> wordColor(MyColor),[king,at],wordRow(NowKingRow),wordCol(NowKingCol),[is,checked,by],wordColor(YourColor),wordType(YourType),
-	[at],wordRow(OppoRow),wordCol(OppoCol),dcgAfterChecked(MyColor,Board),
+	[at],wordRow(OppoRow),wordCol(OppoCol),[and],dcgAfterChecked(MyColor,Board),
 	{
 		opponentColor(MyColor,YourColor),
-		checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board),
-		format('Hello Test ~w',MyColor)
+		checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board)
 	}.
 
 dcgAfterChecked(MyColor,Board)
@@ -46,8 +45,11 @@ dcgAfterChecked(MyColor,Board)
 		{escapeCheck(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)}
 	);
 	(
-		[checkmate],wordColor(MyColor),[cannot,save,king],wordColor(YourColor),[wins],
-		{checkmate(MyColor,Board)}
+		[it,is,checkmate,so],wordColor(MyColor),[cannot,save,the,king,and],wordColor(YourColor),[wins],
+		{
+			opponentColor(MyColor,YourColor),
+			checkmate(MyColor,Board)
+		}
 	),!.
 
 dcgCanGetPoint(StartPoint,MyColor,Board)
@@ -59,10 +61,19 @@ dcgCanGetPoint(StartPoint,MyColor,PointList,Board)
 dcgCanGetPoint(StartPoint,Point,MyColor,PointList,Board)
 --> 
 	(
-		wordColor(MyColor),[can,get],[Point],[points],[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
-		[to],wordRow(NewRow),wordCol(NewCol),[and,take],wordColor(YourColor),wordType(YourType),
+		wordColor(MyColor),[can,get],[Point],wordPoint(Point),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,take],wordColor(YourColor),wordType(YourType),[safely],
 		{
-			canGetPoint(Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board),
+			canGetPointHappy(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board),
+			opponentColor(MyColor,YourColor),
+			locate(NewRow,NewCol,YourType,YourColor,Board)
+		}
+	);
+	(
+		wordColor(MyColor),[can,get],[Point],wordPoint(Point),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,take],wordColor(YourColor),wordType(YourType),[sadly],
+		{
+			canGetPointSad(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Point,PointList,Board),
 			opponentColor(MyColor,YourColor),
 			locate(NewRow,NewCol,YourType,YourColor,Board)
 		}
@@ -75,6 +86,21 @@ dcgCanGetPoint(StartPoint,Point,MyColor,PointList,Board)
 		dcgCanGetPoint(StartPoint,NewPoint,MyColor,PointList,Board)
 	).
 
+wordPoint(Point) 
+--> 
+	(
+		[point],
+		{
+			Point is 1
+		}
+	);
+	(
+		[points],
+		{
+			Point > 1;
+			Point < 1
+		}
+	).
 
 wordColor(black) --> [black].
 wordColor(white) --> [white].
@@ -289,8 +315,17 @@ canGetPointHappy(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Point,Poin
 	opponentColor(MyColor,YourColor),
 	canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType1,MyColor,Board),
 	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
-	\+(
-		canAttack(OppoRow,OppoCol,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+	(
+		(
+			\+(
+				canAttack(OppoRow,OppoCol,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+			)
+		);
+		(
+			canAttack(OppoRow,OppoCol,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter),
+			boardAfterMoving(BoardAfter,BoardLast,OppoRow,OppoCol,NewRow,NewCol,YourType2,YourColor),
+			canAttack(NewRow2,NewCol2,NewRow,NewCol,MyType2,YourType2,MyColor,BoardLast)
+		)
 	),
 	typeNum(MyType,TypeNum1),
 	typeNum(YourType1,TypeNum2),
