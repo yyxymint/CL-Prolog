@@ -20,6 +20,9 @@ canGetPointHappy
 canGetPointSad
 잡을수있지만 손해해가 따를때
 
+countType
+
+
 checked
 킹이 공격범위에 있을 경우
 
@@ -31,6 +34,8 @@ escapeCheck
 checkmate
 체크상황에서
 escapeCheck가 불가능
+
+makeCheckmate
 
 boardAfterMoving
 잡으면서 움직이는거랑
