@@ -1,5 +1,3 @@
-:-set_prolog_flag(double_quotes, codes).
-
 dcgLocate(MyColor,Board) 
 --> wordColor(MyColor),wordType(MyType),[is,located,at],wordRow(Row),wordCol(Col),
 	{
@@ -14,12 +12,150 @@ dcgCanAttack(MyColor,Board)
 		canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,Board)
 	}.
 
+dcgMakeCheckmate(MyColor,Board)
+--> wordColor(MyColor),[can,make,checkmate,by,moving],wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+	[to],wordRow(NewRow),wordCol(NewCol),
+	{
+		makeCheckmate(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)
+	}.
+
 dcgCanGo(MyColor,Board)
 --> wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[can,move,to],
 	wordRow(NewRow),wordCol(NewCol),
 	{
 		canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board)
 	}.
+
+dcgSummarize(MyColor,Board)
+--> 
+	(
+		wordColor(MyColor),[did,not,lose,any,piece],
+		{
+			countTypeAll(MyColor,0,0,0,0,0,Board)
+		}
+	),!;
+	(
+		wordColor(MyColor),[lost],dcgSummarizeQueen(MyColor,Board),dcgSummarizeRook(MyColor,Board),dcgSummarizeBishop(MyColor,Board),
+		dcgSummarizeKnight(MyColor,Board),dcgSummarizePawn(MyColor,Board)
+	).
+
+dcgSummarizeQueen(MyColor,Board)
+--> 
+	(
+		[1,queen],
+		{
+			countType(MyColor,CountQueen,queen,Board),
+			LoseQueen is 1-CountQueen,
+			LoseQueen is 1
+		}
+	);
+	(
+		[LoseQueen,queens],
+		{
+			countType(MyColor,CountQueen,queen,Board),
+			LoseQueen is 1-CountQueen,
+			\+(LoseQueen is 1)
+		}
+	).
+
+dcgSummarizeRook(MyColor,Board)
+--> 
+	(
+		[1,rook],
+		{
+			countType(MyColor,CountRook,rook,Board),
+			LoseRook is 2-CountRook,
+			LoseRook is 1
+		}
+	);
+	(
+		[LoseRook,rooks],
+		{
+			countType(MyColor,CountRook,rook,Board),
+			LoseRook is 2-CountRook,
+			\+(LoseRook is 1)
+		}
+	).
+
+dcgSummarizeBishop(MyColor,Board)
+--> 
+	(
+		[1,bishop],
+		{
+			countType(MyColor,CountBishop,bishop,Board),
+			LoseBishop is 2-CountBishop,
+			LoseBishop is 1
+		}
+	);
+	(
+		[LoseBishop,bishops],
+		{
+			countType(MyColor,CountBishop,bishop,Board),
+			LoseBishop is 2-CountBishop,
+			\+(LoseBishop is 1)
+		}
+	).
+
+dcgSummarizeKnight(MyColor,Board)
+--> 
+	(
+		[1,knight],
+		{
+			countType(MyColor,CountKnight,knight,Board),
+			LoseKnight is 2-CountKnight,
+			LoseKnight is 1
+		}
+	);
+	(
+		[LoseKnight,knights],
+		{
+			countType(MyColor,CountKnight,knight,Board),
+			LoseKnight is 2-CountKnight,
+			\+(LoseKnight is 1)
+		}
+	).
+
+dcgSummarizePawn(MyColor,Board)
+--> 
+	(
+		[and,1,pawn],
+		{
+			countType(MyColor,CountPawn,pawn,Board),
+			LosePawn is 8-CountPawn,
+			LosePawn is 1
+		}
+	);
+	(
+		[and,LosePawn,pawns],
+		{
+			countType(MyColor,CountPawn,pawn,Board),
+			LosePawn is 8-CountPawn,
+			\+(LosePawn is 1)
+		}
+	).
+
+dcgUnderAttack(MyColor,Board)
+-->
+	(
+		{
+			underAttack(OppoRow,OppoCol,NowRow,NowCol,MyType,YourType,MyColor,Board),
+			escapeUnderAttack(NowRow,NowCol,NowRow2,NowCol2,NewRow,NewCol,OppoRow,OppoCol,MyType,MyType2,YourType,MyColor,Board),
+			opponentColor(MyColor,YourColor)
+		},
+		wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[is,now,under,attack,by],wordColor(YourColor),wordType(YourType),
+		[at],wordRow(OppoRow),wordCol(OppoCol),[but,it,can,escape,attack,by,moving],wordColor(MyColor),wordType(MyType2),[at],wordRow(NowRow2),wordCol(NowCol2),
+		[to],wordRow(NewRow),wordCol(NewCol)
+	);
+	(
+		{
+			underAttack(OppoRow,OppoCol,NowRow,NowCol,MyType,YourType,MyColor,Board),
+			\+(escapeUnderAttack(NowRow,NowCol,NowRow2,NowCol2,NewRow,NewCol,OppoRow,OppoCol,MyType,MyType2,YourType,MyColor,Board)),
+			opponentColor(MyColor,YourColor)
+		},
+		wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[is,now,under,attack,by],wordColor(YourColor),wordType(YourType),
+		[at],wordRow(OppoRow),wordCol(OppoCol),[but,it,can,not,escape,attack]
+	).
+
 
 dcgMoveAndAttack(MyColor,Board) 
 --> [if],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),[moves,to],wordRow(NewRow),wordCol(NewCol),
@@ -28,6 +164,64 @@ dcgMoveAndAttack(MyColor,Board)
 		opponentColor(MyColor,YourColor),
 		moveAndAttack(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board)
 	}.
+
+dcgMoveAndGetPoint(StartPoint,MyColor,Board)
+--> dcgMoveAndGetPoint(StartPoint,MyColor,[10,7,6,5,2],Board).
+
+dcgMoveAndGetPoint(StartPoint,MyColor,PointList,Board)
+--> dcgMoveAndGetPoint(StartPoint,StartPoint,MyColor,PointList,Board).
+
+dcgMoveAndGetPoint(StartPoint,WatchingPoint,MyColor,PointList,Board)
+--> 
+	(
+		{
+			opponentColor(MyColor,YourColor),
+			moveAndGetPointHappy(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,WatchingPoint,Point,SubPoint,PointList,Board),
+			\+(MyType2 = none)
+		},
+		wordColor(MyColor),[can,expect],[WatchingPoint],wordPoint(WatchingPoint),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,attack,safely],wordColor(YourColor),wordType(YourType),[at],wordRow(OppoRow),wordCol(OppoCol),[worth,Point],wordPoint(Point),[also,if,it,is,attacked,after,moving,by],wordColor(YourColor),wordType(YourType2),
+		[at],wordRow(OppoRow2),wordCol(OppoCol2),wordColor(MyColor),[can,get,SubPoint],wordPoint(SubPoint),[by,attack],wordColor(YourColor),wordType(YourType2),[again],
+		[by,moving],wordType(MyType2),[at],wordRow(MyRow),wordCol(MyCol)
+	);
+	(
+		{
+			opponentColor(MyColor,YourColor),
+			moveAndGetPointHappy(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,WatchingPoint,Point,SubPoint,PointList,Board),
+			MyType2 = none
+		},
+		wordColor(MyColor),[can,expect],[WatchingPoint],wordPoint(WatchingPoint),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,attack,safely],wordColor(YourColor),wordType(YourType),[at],wordRow(OppoRow),wordCol(OppoCol),[worth,Point],wordPoint(Point)
+	);
+	(
+		{
+			opponentColor(MyColor,YourColor),
+			moveAndGetPointSad(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,WatchingPoint,Point,SubPoint,PointList,Board),
+			\+(MyType2 = none)
+		},
+		wordColor(MyColor),[can,expect],[WatchingPoint],wordPoint(WatchingPoint),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,attack,sadly],wordColor(YourColor),wordType(YourType),[at],wordRow(OppoRow),wordCol(OppoCol),[worth,Point],wordPoint(Point),[also,if,it,is,attacked,after,moving,by],wordColor(YourColor),wordType(YourType2),
+		[at],wordRow(OppoRow2),wordCol(OppoCol2),wordColor(MyColor),[can,get,SubPoint],wordPoint(SubPoint),[by,attack],wordColor(YourColor),wordType(YourType2),[again],
+		[by,moving],wordType(MyType2),[at],wordRow(MyRow),wordCol(MyCol)
+	);
+	(
+		{
+			opponentColor(MyColor,YourColor),
+			moveAndGetPointSad(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,WatchingPoint,Point,SubPoint,PointList,Board),
+			MyType2 = none
+		},
+		wordColor(MyColor),[can,expect],[WatchingPoint],wordPoint(WatchingPoint),[by,moving],wordColor(MyColor),wordType(MyType),[at],wordRow(NowRow),wordCol(NowCol),
+		[to],wordRow(NewRow),wordCol(NewCol),[and,attack,sadly],wordColor(YourColor),wordType(YourType),[at],wordRow(OppoRow),wordCol(OppoCol),[worth,Point],wordPoint(Point)
+	);
+	(
+		{
+			WatchingPoint > -StartPoint,
+			NewPoint is WatchingPoint - 1
+		},
+		dcgMoveAndGetPoint(StartPoint,NewPoint,MyColor,PointList,Board)
+	).
+
+
 
 dcgChecked(MyColor,Board)
 --> wordColor(MyColor),[king,at],wordRow(NowKingRow),wordCol(NowKingCol),[is,checked,by],wordColor(YourColor),wordType(YourType),
@@ -128,12 +322,6 @@ typeNum(bishop,3).
 typeNum(knight,4).
 typeNum(pawn,5).
 
-notPawnList([rook,bishop,knight,queen,king]).
-
-notPawn(Type):-
-	notPawnList(L),
-	member(Type,L).
-
 excludePiece([H|T],Paper,BoardAfter,PieceInformation):-
 	H = PieceInformation,
 	excludePiece(T,Paper,BoardAfter,PieceInformation).
@@ -158,7 +346,6 @@ betweenDiagonalRightDown(RowDown,ColDown,RowUp,ColUp,NewRow,NewCol):-
 	NewCol is ColUp+Abs.
 
 boardAfterMoving(BoardBefore,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor):-
-	notPawn(MyType),
 	opponentColor(MyColor,YourColor),
 	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,BoardBefore),
 	locate(NewRow,NewCol,YourType,YourColor,BoardBefore),
@@ -167,27 +354,11 @@ boardAfterMoving(BoardBefore,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyCol
 	append([pos(NewRow,NewCol,MyType,MyColor)],BoardAfterAttacking,BoardAfter).
 
 boardAfterMoving(BoardBefore,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor):-
-	notPawn(MyType),
 	opponentColor(MyColor,YourColor),
 	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,BoardBefore),
 	\+(locate(NewRow,NewCol,YourType,YourColor,BoardBefore)),
 	excludePiece(BoardBefore,[],BoardAfterMovingMine,pos(NowRow,NowCol,MyType,MyColor)),
 	append([pos(NewRow,NewCol,MyType,MyColor)],BoardAfterMovingMine,BoardAfter).
-
-boardAfterMoving(BoardBefore,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor):-
-	\+(notPawn(MyType)),
-	opponentColor(MyColor,YourColor),
-	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,BoardBefore),
-	excludePiece(BoardBefore,[],BoardAfterMovingMine,pos(NowRow,NowCol,MyType,MyColor)),
-	append([pos(NewRow,NewCol,MyType,MyColor)],BoardAfterMovingMine,BoardAfter).
-
-boardAfterMoving(BoardBefore,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor):-
-	\+(notPawn(MyType)),
-	opponentColor(MyColor,YourColor),
-	canAttack(NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,BoardBefore),
-	excludePiece(BoardBefore,[],BoardAfterRemovingAttacked,pos(NewRow,NewCol,YourType,YourColor)),
-	excludePiece(BoardAfterRemovingAttacked,[],BoardAfterAttacking,pos(NowRow,NowCol,MyType,MyColor)),
-	append([pos(NewRow,NewCol,MyType,MyColor)],BoardAfterAttacking,BoardAfter).
 
 canGo(NowRow,NowCol,NewRow,NewCol,knight,MyColor,Board):-
 	locate(NowRow,NowCol,knight,MyColor,Board),
@@ -289,6 +460,97 @@ moveAndAttack(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColo
 		)
 	).
 
+moveAndGetPointHappy(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,TotalPoint,Point,SubPoint,PointList,Board):-
+	opponentColor(MyColor,YourColor),
+	\+(
+		canAttack(NowRow,NowCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board)
+	),
+	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	canGetPointHappy(NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,Point,PointList,BoardAfter),
+	(
+		(
+			\+(
+				canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+			),
+			YourType2 = none,
+			SubPoint = 0,
+			TotalPoint is Point + SubPoint,
+			MyRow = 0,
+			MyCol = 0,
+			MyType2 = none
+		);
+		(
+			canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter),
+			boardAfterMoving(BoardAfter,BoardLast,OppoRow2,OppoCol2,NewRow,NewCol,YourType2,YourColor),
+			canAttack(MyRow,MyCol,NewRow,NewCol,MyType2,YourType2,MyColor,BoardLast),
+			typeNum(MyType,TypeNum1),
+			typeNum(YourType2,TypeNum2),
+			calculatePoint(TypeNum2,PointList,PlusPoint),
+			calculatePoint(TypeNum1,PointList,MinusPoint),
+			SubPoint is PlusPoint-MinusPoint,
+			TotalPoint is Point + SubPoint
+		)
+	).
+
+moveAndGetPointSad(NowRow,NowCol,NewRow,NewCol,OppoRow,OppoCol,MyRow,MyCol,OppoRow2,OppoCol2,MyType2,MyType,YourType,YourType2,MyColor,TotalPoint,Point,SubPoint,PointList,Board):-
+	opponentColor(MyColor,YourColor),
+	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
+	\+(
+		canAttack(NowRow,NowCol,OppoRow,OppoCol,MyType,YourType,MyColor,Board)
+	),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	canGetPointSad(NewRow,NewCol,OppoRow,OppoCol,MyType,YourType,MyColor,Point,PointList,BoardAfter),
+	(
+		(
+			\+(
+				canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter)
+			),
+			YourType2 = none,
+			SubPoint = 0,
+			TotalPoint is Point + SubPoint,
+			MyRow = 0,
+			MyCol = 0,
+			MyType2 = none
+		);
+		(
+			canAttack(OppoRow2,OppoCol2,NewRow,NewCol,YourType2,MyType,YourColor,BoardAfter),
+			boardAfterMoving(BoardAfter,BoardLast,OppoRow2,OppoCol2,NewRow,NewCol,YourType2,YourColor),
+			canAttack(MyRow,MyCol,NewRow,NewCol,MyType2,YourType2,MyColor,BoardLast),
+			typeNum(MyType,TypeNum1),
+			typeNum(YourType2,TypeNum2),
+			calculatePoint(TypeNum2,PointList,PlusPoint),
+			calculatePoint(TypeNum1,PointList,MinusPoint),
+			SubPoint is PlusPoint-MinusPoint,
+			TotalPoint is Point + SubPoint
+		)
+	).
+
+countType(MyColor,Ans,MyType,Board):-
+	countType(MyColor,0,Ans,MyType,Board).
+
+countType(MyColor,Paper,Ans,MyType,[H|T]):-
+	H = pos(_,_,MyType,MyColor),
+	NewPaper is Paper + 1,
+	countType(MyColor,NewPaper,Ans,MyType,T).	
+
+countType(MyColor,Paper,Ans,MyType,[H|T]):-
+	\+(H = pos(_,_,MyType,MyColor)),
+	countType(MyColor,Paper,Ans,MyType,T).
+
+countType(MyColor,Paper,Paper,MyType,[]).
+
+countTypeAll(MyColor,LoseQueen,LoseRook,LoseBishop,LoseKnight,LosePawn,Board):-
+	countType(MyColor,CountQueen,queen,Board),
+	LoseQueen is 1-CountQueen,
+	countType(MyColor,CountRook,rook,Board),
+	LoseRook is 2-CountRook,
+	countType(MyColor,CountBishop,bishop,Board),
+	LoseBishop is 2-CountBishop,
+	countType(MyColor,CountKnight,knight,Board),
+	LoseKnight is 2-CountKnight,
+	countType(MyColor,CountPawn,pawn,Board),
+	LosePawn is 8-CountPawn.
 
 calculatePoint(TypeNum,PointList,Point):-
 	(
@@ -363,8 +625,27 @@ pointLoop(StartPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,P
 		pointLoop(NewPoint,Point,NowRow,NowCol,NewRow,NewCol,MyType,YourType,MyColor,PointList,Board)
 	).
 
+makeCheckmate(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board):-
+	opponentColor(MyColor,YourColor),
+	canGo(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow,NowCol,NewRow,NewCol,MyType,MyColor),
+	checkmate(YourColor,BoardAfter).
 
+underAttack(OppoRow,OppoCol,NowRow,NowCol,MyType,YourType,MyColor,Board):-
+	opponentColor(MyColor,YourColor),
+	canAttack(OppoRow,OppoCol,NowRow,NowCol,YourType,MyType,YourColor,Board),
+	boardAfterMoving(Board,BoardAfter,OppoRow,OppoCol,NowRow,NowCol,YourType,YourColor),
+	\+(
+		canAttack(NowRow2,NowCol2,NowRow,NowCol,MyType2,YourType,MyColor,BoardAfter)
+	).
 
+escapeUnderAttack(NowRow,NowCol,NowRow2,NowCol2,NewRow,NewCol,OppoRow,OppoCol,MyType,MyType2,YourType,MyColor,Board):-
+	underAttack(OppoRow,OppoCol,NowRow,NowCol,MyType,YourType,MyColor,Board),
+	canGo(NowRow2,NowCol2,NewRow,NewCol,MyType2,MyColor,Board),
+	boardAfterMoving(Board,BoardAfter,NowRow2,NowCol2,NewRow,NewCol,MyType2,MyColor),
+	\+(
+		underAttack(OppoRow,OppoCol,NowRow,NowCol,MyType,YourType,MyColor,BoardAfter)
+	).
 
 checked(OppoRow,OppoCol,NowKingRow,NowKingCol,YourType,MyColor,Board):-
 	opponentColor(MyColor,YourColor),
@@ -521,6 +802,7 @@ pawnCanGo(NowRow,NowCol,NewRow,NewCol,black,Board):-
 		),
 		NewRow is NowRow+1,
 		between(1,8,NewRow),
+		between(1,8,NewCol),
 		locate(NewRow,NewCol,_,white,Board)
 	).
 
@@ -551,6 +833,7 @@ pawnCanGo(NowRow,NowCol,NewRow,NewCol,white,Board):-
 		),
 		NewRow is NowRow-1,
 		between(1,8,NewRow),
+		between(1,8,NewCol),
 		locate(NewRow,NewCol,_,black,Board)
 	).
 
