@@ -72,3 +72,30 @@ dcgAfterChecked
 
 
 
+9
+canGo(8,8,5,8,rook,white,[pos(5,8,knight,black),pos(8,5,rook,white),pos(8,8,rook,white)]).
+canGo(8,8,8,5,rook,white,[pos(5,8,knight,black),pos(8,5,rook,white),pos(8,8,rook,white)]).
+
+10
+canGo(2,5,NewRow,NewCol,pawn,black,[pos(2,5,pawn,black)]).
+
+12
+dcgCanAttack(black,[pos(1,7,rook,black),pos(4,5,knight,black),pos(3,7,bishop,white)],X,[]).
+
+14
+dcgSummarize(black,[pos(1,7,rook,black),pos(2,5,king,black),pos(3,7,pawn,black),pos(4,1,pawn,black),pos(4,3,rook,black),pos(4,5,knight,black),pos(5,8,pawn,black),pos(6,2,pawn,black)],X,[]).
+
+15
+boardAfterMoving([pos(2,2,bishop,black),pos(4,1,pawn,white),pos(4,8,rook,black)],BoardAfter,4,8,4,1,rook,black).
+
+16
+boardAfterMoving([pos(2,2,bishop,black),pos(4,1,pawn,white),pos(4,8,rook,black)],BoardAfter,2,2,4,4,bishop,black).
+
+20
+dcgCanGetPoint(20,white,[pos(1,7,bishop,black),pos(1,8,rook,white),pos(3,8,knight,black),pos(4,4,rook,black),pos(6,2,bishop,white)],X,[]).
+
+25
+dcgChecked(black,[pos(1,7,king,black),pos(2,5,rook,black),pos(3,5,bishop,white),pos(3,7,knight,white),pos(3,8,rook,white)],X,[]).
+
+26
+dcgMoveAndGetPoint(20,white,[pos(1,7,pawn,white),pos(1,8,rook,white),pos(2,7,pawn,white),pos(2,8,rook,white),pos(5,7,pawn,white),pos(6,7,pawn,white),pos(5,2,bishop,black),pos(7,4,knight,black),pos(8,6,knight,black)],X,[]).
