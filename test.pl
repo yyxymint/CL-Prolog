@@ -1,3 +1,7 @@
+:- set_prolog_flag(answer_write_options,[max_depth(0)]).
+:- style_check(-singleton).
+:- style_check(-discontiguous).
+
 dcgLocate(MyColor,Board) 
 --> wordColor(MyColor),wordType(MyType),[is,located,at],wordRow(Row),wordCol(Col),
 	{
@@ -664,7 +668,7 @@ checkmate(MyColor,Board):-
 	forall(
 		escapeCheck(NowRow,NowCol,NewRow,NewCol,MyType,MyColor,Board),
 		false
-	).
+	),!.
 
 knightCanGo(NowRow,NowCol,NewRow,NewCol,MyColor,Board):-
 	(
